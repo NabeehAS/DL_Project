@@ -1,0 +1,11 @@
+The code files are split into different parts, first, you should run the collector and cordinates files in order to obtain the pictures
+from google api and sort them into their respective country folder, this process takes time so we have provided a download link to the datasets
+we used in this project, so before running the experiments codes, you should download the datasets and move them into the  code_files folder.
+
+Datasets: https://drive.google.com/file/d/1Fwl6rypEN0v5s-Frop2DXHMW4P4lhxJG/view?usp=sharing
+the folder dataset contains 30 countries, and for each country 1000 pictures.
+the folder augmented_dataset contains 30 countries, and for each country 1000 pictures and additional 1000 flipped pictures of the original thousand (2000 each).
+
+After that, in order to run the experiments, each file of them is independant of the other files, therefore, running the codes is straight forward,
+the code is split into blocks in the notebook, where each block does a specific task (one for training, one for testing etc.), so simply run
+each block and check the results.

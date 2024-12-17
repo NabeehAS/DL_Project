@@ -1,0 +1,17 @@
+Required packages:
+
+torch
+torchvision
+numpy
+matplotlib
+collections
+sklearn
+requests
+time
+random
+os
+progressbar
+cordinates
+xml.etree.ElementTree
+geopy.geocoders
+PIL

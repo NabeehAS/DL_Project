@@ -1,0 +1,7 @@
+For most experiments' files, the structures are similar with slight changes, first is the installation of the model we are working with.
+the second part is declaring the transformations we are working with, and from each country folder among the 30 countries, 
+we split the dataset for train and test and after that we split the train into train and validation subsets.
+3rd part is declaring the train method, which is responsible for the training and validation phase.
+4th part is the training phase, where the training method is called with the appropriate optimizer, learning rate and the number of epochs.
+5th part is the testing phase, where we used the test subset which is different that the train and val sets, in order to check the test accuracy of the model.
+and the last part is a visualization of some of the pictures with their predictions and their correct label.
