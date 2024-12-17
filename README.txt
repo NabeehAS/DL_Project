@@ -1,5 +1,7 @@
 each file stands on its own, to recreate an expirement simply run the desired notebook
 
+Project final report is called Country Classification.
+
 code files:
 
 AI_project_30-1000MobileNetV2Crop: Used MobileNetV2, implemented the only experiment for MobileNet with cropping for training transformation.
