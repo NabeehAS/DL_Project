@@ -4,6 +4,11 @@ This repository contains all the files and notebooks used in our project, "Count
 
 ## Project Files
 
+## Final Report
+The final project report is titled **Country Classification**. It details the methods, experiments, and results of this project.
+
+---
+
 ### Code Files
 - **AI_project_30-1000MobileNetV2Crop**  
   Uses MobileNetV2 with cropping applied during training. Implements the MobileNet experiment described in the report.
@@ -42,9 +47,6 @@ This repository contains all the files and notebooks used in our project, "Count
 
 - **proof_of_concept**  
   Implements the "Proof of Concept" test described in the project report.
-
-## Final Report
-The final project report is titled **Country Classification**. It details the methods, experiments, and results of this project.
 
 ---
 
