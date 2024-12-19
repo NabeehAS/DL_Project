@@ -1,9 +1,7 @@
-<table>
-  <tr>
-    <td><h1>Country Classification Project</h1></td>
-    <td><img src="https://somerandomstuff1.wordpress.com/wp-content/uploads/2019/02/geoguessr1.png" alt="alt text" width="200" height="200"></td>
-  </tr>
-</table>
+<p>
+  <span style="font-size: 24px; font-weight: bold;">Country Classification Project</span>
+  <img src="https://somerandomstuff1.wordpress.com/wp-content/uploads/2019/02/geoguessr1.png" alt="alt text" width="200" height="200" style="vertical-align: middle; margin-left: 10px;">
+</p>
 
 This repository contains all the files and notebooks used in our project, "Country Classification." Each file is self-contained, and you can recreate a specific experiment by running the corresponding notebook.
 
