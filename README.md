@@ -1,6 +1,6 @@
 # Country Classification Project
 
-(![alt text]([http://url/to/img.png](https://somerandomstuff1.wordpress.com/wp-content/uploads/2019/02/geoguessr1.png)))
+![alt text](https://somerandomstuff1.wordpress.com/wp-content/uploads/2019/02/geoguessr1.png)
 
 This repository contains all the files and notebooks used in our project, "Country Classification." Each file is self-contained, and you can recreate a specific experiment by running the corresponding notebook.
 
