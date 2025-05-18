@@ -1,56 +1,73 @@
-# Country Classification Project
+# Country Classification
 
-This repository contains all the files and notebooks used in our project, "Country Classification." Each file is self-contained, and you can recreate a specific experiment by running the corresponding notebook.
+## Project Overview
 
-## Final Report
-The final project report is titled **Country_classification.pdf**. It details the methods, experiments, and results of this project.
+**Country Classification** is a university AI project that predicts the country where a given photograph was taken, using images from Google Street View. The real-world inspiration comes from the game *GeoGuessr*, where players are dropped into a random Street View location and must guess the location (often the country) from visual cues. Each country has distinct features – from famous landmarks (e.g. Big Ben in the UK or the Eiffel Tower in France) to subtle details like road signs or vegetation (e.g. unique wildlife signs in New Zealand). This project’s goal is to mimic that human ability by training an AI model to recognize such cues and classify the country from a single street-level image.
 
----
+## Dataset Collection
 
-## Project Files
+Building a robust dataset was a crucial (and challenging) part of the project. We assembled a custom image dataset covering **30 countries**, with **1,000 Street View images per country** (for a total of 30,000 original images). Key steps in the data collection process included:
 
-### Code Files
-- **AI_project_30-1000MobileNetV2Crop**  
-  Uses MobileNetV2 with cropping applied during training. Implements the MobileNet experiment described in the report.
+* **Country Selection:** We selected 30 countries with sufficient Google Street View coverage and geographic diversity. This ensured a mix of regions and terrains, while avoiding very small or underrepresented countries.
+* **Random Location Retrieval:** For each country, we used the **3geonames API** to fetch random geographic coordinates within that country’s borders. This API takes a country’s ISO-2 code (e.g. “US” for United States, “MX” for Mexico) and returns a random latitude/longitude pair in that country.
+* **Street View Image Fetching:** Using the coordinates, we leveraged the **Google Maps Street View API** to retrieve the corresponding street-level panorama image. We randomized the viewing angle (heading between 0°–359°) for each location to get varied perspectives, while keeping the field-of-view (FOV) at 90° and pitch at 0 (horizontal view).
+* **Coverage and Quality Checks:** Not all coordinates have Street View coverage. We first checked if a location was covered by Street View; if not, we requested the nearest covered location. We also performed a reverse lookup with 3geonames to ensure the nearest point was still in the correct country. Additionally, we filtered out images contributed by users (to maintain consistency, focusing only on Google-collected imagery which typically comes from public roads).
+* **Balancing and Labeling:** Each image was saved with a filename label corresponding to its country (using the country’s alpha-2 code). We gathered exactly 1,000 images per country to keep the classes balanced. The dataset was then split into training, validation, and test sets with an equal proportion of images from each country in each split.
+* **Data Augmentation (Mirroring):** To enlarge the dataset without new data collection, we **horizontally flipped** each image to create a mirrored version. This doubled the dataset to **2,000 images per country** (totaling 60,000 images). *Important:* We ensured that an original image and its mirrored copy were always placed in the **same** set (train/val/test) to prevent **data leakage** (i.e. the model accidentally “seeing” a test image’s mirror during training). This augmentation was later analyzed for its impact on performance.
 
-- **AI_project_30-1000NoCrop**  
-  Uses ResNet-50 with the "Normal Transformation" method as described in the report.
+## Models and Methodologies
 
-- **AI_project_30-1000CropTrain**  
-  Uses ResNet-50 with the "Cropping" technique, as explained in the report.
+We experimented with a range of models, from simple custom CNNs to state-of-the-art pretrained networks. Our methodology was to start with baseline models and progressively incorporate more advanced techniques:
 
-- **AI_project_30-1000CropTrainFreezeUnfreeze**  
-  Uses ResNet-50 with the "Freeze Unfreeze" method detailed in the report.
+* **Basic CNN Benchmarks:** We built simple convolutional neural networks as initial baselines. One model used **2 convolutional layers** and another used **3 convolutional layers** (each with 3×3 kernels, ReLU activation and max-pooling). These CNNs flatten the feature maps and feed into fully-connected output layers for classification. While these models did learn some features, they quickly encountered **overfitting** due to the limited dataset size – the training accuracy would improve while validation accuracy plateaued or dropped. The best basic CNN achieved only modest accuracy (on the order of \~35% on the test set), which, though above random chance (3.3% for 30 classes), indicated the need for more powerful approaches.
 
-- **AI_project_30-1000MulFix**  
-  Uses ResNet-50 with the "Data Augmentation" technique. Ensures that no image and its mirrored counterpart are included in both the training and testing sets.
+* **Transfer Learning with MobileNetV2:** Next, we employed a pretrained **MobileNetV2** model (a 53-layer deep CNN known for its efficiency on image tasks). We fine-tuned MobileNetV2 on our country dataset. Despite MobileNetV2’s lightweight architecture, it delivered a huge leap in performance. It achieved around **73–74% test accuracy**, far surpassing the simple CNNs. This was a surprising and encouraging result – we expected MobileNetV2 to outperform the basic models, but not to nearly match a heavier model like ResNet. The MobileNetV2’s success demonstrated the power of transfer learning on our problem and showed no obvious overfitting (validation loss stayed in line with training loss).
 
-- **AI_project_30-1000Mul**  
-  Uses ResNet-50 with the "Data Augmentation" technique, allowing mirrored images in training and testing, as described in the report.
+* **Transfer Learning with ResNet-50:** Given the promising MobileNet results, we moved to a larger pretrained model, **ResNet-50**, which often excels with smaller datasets due to its residual learning capability. We conducted a series of experiments with ResNet-50, each introducing a different training strategy:
 
-### Utility Files
-- **alpha2**  
-  Contains a list of the alpha-2 codes for the countries used in this project. Used by `collector` and `coordinates` scripts.
+  * **Baseline ResNet-50 Fine-Tuning:** In the first experiment, we fine-tuned ResNet-50 on our data by simply resizing all images to 224×224 (the network’s expected input size) and applying minor on-the-fly augmentations (random horizontal flips and rotations during training). This baseline already slightly outperformed MobileNetV2, reaching about **74% test accuracy**.
+  * **ResNet-50 with Random Cropping:** In the next experiment, we modified the training preprocessing to include **random cropping**. Instead of using the entire resized image, we would take a random crop of the image and then scale it to 224×224 for input. The idea was to force the model to focus on different portions or details of images in each epoch, improving its ability to generalize features. This approach yielded the **highest accuracy** of our experiments – about **75.6% test accuracy**. The improvement (\~1.5% over the baseline) suggests that adding this variability helped the model avoid over-relying on any single part of the image and improved overall generalization.
+  * **ResNet-50 with Freeze–Unfreeze (Layer Freezing):** We also tried the **freeze–unfreeze** training technique. We initially **froze** the early convolutional layers of ResNet-50 (preventing them from updating) and trained only the final layers on our dataset for a few epochs. This leverages the general features learned from ImageNet (edges, textures, shapes) without immediately overfitting to our data. After this phase, we **unfroze** all layers and continued fine-tuning the entire network on our data. This two-phase training did not dramatically increase the overall accuracy beyond the cropping experiment – the final test accuracy remained around **75%** – but it had an interesting effect. Certain countries that previously had poorer results (for example, France, Mexico, and the USA) saw their class-specific accuracy improve noticeably. The freeze–unfreeze method likely helped the model preserve useful generic features early on, benefiting those classes that needed more generalized feature recognition.
+  * **ResNet-50 with Additional Data Augmentation:** In another experiment, we took advantage of our **mirrored images** to train ResNet-50 on effectively double the data. Initially, when we naively added all the mirrored images to training, validation accuracy oddly surpassed training accuracy – a red flag. We discovered this was due to **data leakage**: some original images were in training while their mirrored counterparts ended up in validation or test sets, making those “new” images unintentionally familiar to the model. We corrected this by ensuring each original–mirror pair stayed within the same split. After fixing the leakage issue, the model still enjoyed a modest performance boost. The test accuracy rose by about **1.5%** compared to the baseline (to roughly **75.5%**). This confirmed that although the mirrored images didn’t provide completely novel information, they did help the model marginally by augmenting the training data – as long as the splits were handled properly.
 
-- **coordinates**  
-  Collects coordinates for countries listed in `alpha2` and saves them to appropriately named text files.
+## Experiments and Results
 
-- **collector**  
-  Collects images for each country and saves them in appropriately named folders. Requires a Google API key.
+We conducted a series of experiments with the above models and techniques, evaluating each on the held-out test set. The table below summarizes the **test accuracy** achieved by each approach:
 
-- **flipper**  
-  Creates flipped copies of each image.
+| Model/Technique                              | Test Accuracy (Approx.) |
+| -------------------------------------------- | ----------------------- |
+| **Simple CNN (2-layer)**                     | \~34%                   |
+| **Simple CNN (3-layer)**                     | \~36%                   |
+| **MobileNetV2 (pretrained)**                 | \~73.8%                 |
+| **ResNet-50 Baseline (fine-tuned)**          | \~74.0%                 |
+| **ResNet-50 + Random Cropping**              | **75.6%** (best)        |
+| **ResNet-50 + Freeze–Unfreeze**              | \~75%                   |
+| **ResNet-50 + Horizontal Flip Augmentation** | \~75.5%                 |
 
-### Additional Experiments
-- **CNN_benchmark**  
-  Benchmarks CNNs with varying numbers of convolutional layers.
+**Key Results:** Our best model (ResNet-50 with random cropped training) reached about **75% accuracy** in identifying the correct country from a single image. This is a substantial improvement over the naïve CNN benchmarks and even the MobileNetV2 model. It shows the benefit of applying both transfer learning and data augmentation techniques for this task. Even the lightweight MobileNetV2 performed impressively well (\~74%), coming close to ResNet-50’s performance. In contrast, the custom CNNs struggled, underscoring how challenging the task is without large networks or pre-learned features.
 
-- **proof_of_concept**  
-  Implements the "Proof of Concept" test described in the project report.
+It’s worth noting that our model’s performance, while strong for our dataset size, is below state-of-the-art results found in online communities (some public projects report \~95% accuracy using 10,000+ images per country and specialized architectures). This gap highlights how our **limited data** and simpler setups cap the achievable accuracy, but also how additional data and enhancements could further improve the model.
 
----
+## Key Insights
 
-Feel free to reach out for further questions or suggestions!
+Through the course of the project, we gained several insights and lessons:
 
+* **Small Models vs Big Models:** Simple CNNs severely underperform on this task due to the fine-grained nature of country features. However, we were surprised that even a basic CNN managed \~36% accuracy on 30 classes – much higher than random chance – indicating it did learn some useful features. Still, **transfer learning** from larger pretrained networks was essential to reach usable accuracy levels.
+* **Overfitting and Generalization:** Overfitting was evident in early experiments. Techniques that improved generalization – such as using pretrained models, applying random cropping, and augmenting the data – were critical. The random cropping strategy in particular stood out as an effective way to boost generalization, yielding the single largest accuracy jump among our experiments.
+* **Data Leakage Risks:** We discovered how **data leakage** can falsely inflate performance. Our initial attempt at doubling the data with mirrored images gave unrealistically high validation scores because identical scenes (one mirrored) appeared in both training and validation sets. This reinforced the importance of careful dataset splitting – a small mistake can lead to overly optimistic results. Once fixed, the genuine performance gain from augmentation was modest but real.
+* **Pretrained Model Surprises:** We found it interesting that **MobileNetV2**, despite being much smaller than ResNet-50, achieved almost the same accuracy. This suggests that for this problem, a lightweight model can extract nearly as much useful information from the data as a heavier model, possibly due to the limited dataset size (where extremely deep models might not show their full potential). It also emphasizes MobileNetV2’s efficiency and well-designed architecture for image recognition tasks.
+* **Data Artifacts and “Shortcuts”:** Upon examining predictions, we realized the model sometimes relied on peculiar visual markers unique to certain countries. For instance, many Street View images from India have the **lower third of the image blurred** (due to Google blurring the sky or certain areas) – a quirk not common in other countries – and the model likely used this as a shortcut to identify India. Similarly, a batch of images from Chile were taken from the top of a moving train (showing a distinctive railroad car and equipment in view), which the model could latch onto for that country. These findings were a double-edged sword: they boosted accuracy for those countries but not for the right reasons, highlighting how models can pick up on unintended dataset biases.
+* **Importance of Data Quantity and Quality:** The project underscored that **dataset size and quality are limiting factors**. Collecting Street View images for 30 countries was time-consuming and logistically challenging (ensuring each image was valid, correctly labeled, and diverse). We suspect that many misclassifications or limitations of our model could be overcome with a larger and more comprehensive dataset – as evidenced by other projects achieving higher accuracy with far more data.
 
+## Future Work
 
+There are several promising directions to extend and improve this project in the future:
+
+1. **Scale Up the Dataset:** Increase the number of images per country (e.g. from 1,000 to 5,000 or 10,000 each) to provide the models with more examples. A controlled experiment could be to gradually grow the dataset and observe accuracy gains (for instance, train ResNet-50 on 500, 1,000, 2,000, ... images per country to see when diminishing returns set in).
+2. **Try New Architectures:** Explore other neural network architectures that might excel at this task. For example, vision transformers or efficient CNN variants like **TinyViT** could be tried, as they are known for strong performance even on relatively small datasets. We focused on a few models due to time, but expanding the architecture search could yield better results.
+3. **Combine Techniques:** In our experiments, we tried cropping, freeze–unfreeze, and data augmentation separately with ResNet-50. These techniques are not mutually exclusive – a single training regimen could incorporate all of them (e.g. use random cropping *and* data augmentation, while employing layer freezing at the start). It would be interesting to see if combining these strategies leads to an additive improvement in accuracy beyond what each achieved individually.
+4. **More Countries:** Extend the classification to **more countries** (eventually all countries with Street View coverage). Doubling the number of country classes (from 30 to 60, etc.) would increase the difficulty, but it’s a logical next step towards a truly global country classifier. This would, of course, require even more data and careful curation to maintain balance and coverage for each new country.
+
+## Final Notes
+
+This project was a challenging yet rewarding exploration into computer vision and geographic classification. We learned first-hand how important data collection and preparation are for AI projects – in many ways, assembling the dataset was as complex as designing the models. We also gained experience with cutting-edge deep learning techniques, from fine-tuning pretrained networks to handling pitfalls like data leakage. While our **Country Classification** model is not perfect, achieving \~75% accuracy across 30 countries, it demonstrates a solid proof-of-concept and provides a foundation to build on. Overall, this project was an invaluable learning experience in applying AI to a real-world problem, and it showcases our ability to carry a complex machine learning project from idea to implementation, through to analysis of results and identification of future improvements. We’re proud of the progress made and excited about the possibilities for taking it further.
