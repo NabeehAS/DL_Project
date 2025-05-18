@@ -1,4 +1,11 @@
-# Country Classification
+
+<h1 align="center">Country Classification</h1>
+
+<p align="center">
+  <img src="https://somerandomstuff1.wordpress.com/wp-content/uploads/2019/02/geoguessr1.png"
+       width="400"
+       alt="Globe with pin">
+</p>
 
 ## Project Overview
 
